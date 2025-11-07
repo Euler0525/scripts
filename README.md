@@ -5,6 +5,7 @@
 |    File Name     |                         Function                          |
 | :--------------: | :-------------------------------------------------------: |
 | `net_warning.sh` | Network traffic monitoring script with threshold alerting |
+|   `bitsrun.sh`   |      Log in to the BIT campus network automatically       |
 
 ## Tampermonkey
 
