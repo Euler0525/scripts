@@ -4,6 +4,23 @@ from typing import List, Tuple, Optional, Union
 from pydub import AudioSegment
 
 
+def natural_sort_key(s: str) -> List[Union[str, int]]:
+    """Generate a key for natural sorting of strings containing numbers.
+
+    Splits string into text and number parts, converting numbers to integers
+    for proper numerical comparison.
+
+    Args:
+        s: String to generate sort key for
+
+    Returns:
+        List of alternating str and int parts for natural sorting
+    """
+    # Split into parts of digits and non-digits
+    return [int(part) if part.isdigit() else part.lower()
+            for part in re.split(r'(\d+)', s)]
+
+
 def get_all_audio_files(root_dir: str) -> List[str]:
     """Recursively collect paths of all .flac and .wav audio files in the directory.
 
@@ -46,13 +63,13 @@ def group_audio_files_by_directory(audio_files: List[str]) -> dict:
 
 
 def delete_backup_files(root_dir: str) -> None:
-    """Delete backup files with names ending with (1) and extensions .flac, .wav, .cue, .md, .jpg.
+    """Delete backup files with names ending with (1) and extensions .flac, .wav, .cue.
 
     Args:
         root_dir: Root directory to search for backup files
     """
     # Regex pattern to match files ending with (1) and specific extensions (case-insensitive)
-    pattern = re.compile(r'^(.*)\(1\)\.(flac|wav|cue|md|jpg)$', re.IGNORECASE)
+    pattern = re.compile(r'^(.*)\(1\)\.(flac|wav|cue)$', re.IGNORECASE)
 
     for dirpath, _, filenames in os.walk(root_dir):
         for filename in filenames:
@@ -347,7 +364,7 @@ def main(root_dir: str) -> None:
     2. Find all audio files recursively
     3. Group audio files by their parent directory
     4. For each directory:
-        a. Sort audio files in the directory by filename (case-insensitive)
+        a. Sort audio files in the directory using natural sorting (numbers as values)
         b. Process each audio file with directory-specific CD numbering
         c. Check for matching CUE file and split if valid
         d. Backup original files if splitting succeeds
@@ -367,8 +384,9 @@ def main(root_dir: str) -> None:
 
     # Process each directory separately
     for dir_path, dir_audio_files in dir_groups.items():
-        # Sort audio files in current directory by filename (case-insensitive)
-        dir_audio_files.sort(key=lambda x: os.path.basename(x).lower())
+        # Sort audio files in current directory using natural sorting (handles numbers correctly)
+        dir_audio_files.sort(
+            key=lambda x: natural_sort_key(os.path.basename(x)))
         print(
             f"\nProcessing directory: {dir_path} with {len(dir_audio_files)} audio files")
 
