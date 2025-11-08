@@ -19,3 +19,4 @@
 |   File Name    |         Function         |
 | :------------: | :----------------------: |
 | `con_click.py` | Mouse continuous clicker |
+| `cue_audio_splitter.py` | CUE-based FLAC/WAV splitter |
