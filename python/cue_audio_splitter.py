@@ -27,6 +27,44 @@ def get_all_audio_files(root_dir: str) -> List[str]:
     return audio_files
 
 
+def group_audio_files_by_directory(audio_files: List[str]) -> dict:
+    """Group audio files by their parent directory.
+
+    Args:
+        audio_files: List of audio file paths
+
+    Returns:
+        Dictionary with directory paths as keys and list of audio files in that directory as values
+    """
+    dir_groups = {}
+    for file_path in audio_files:
+        dir_path = os.path.dirname(file_path)
+        if dir_path not in dir_groups:
+            dir_groups[dir_path] = []
+        dir_groups[dir_path].append(file_path)
+    return dir_groups
+
+
+def delete_backup_files(root_dir: str) -> None:
+    """Delete backup files with names ending with (1) and extensions .flac, .wav, .cue, .md, .jpg.
+
+    Args:
+        root_dir: Root directory to search for backup files
+    """
+    # Regex pattern to match files ending with (1) and specific extensions (case-insensitive)
+    pattern = re.compile(r'^(.*)\(1\)\.(flac|wav|cue|md|jpg)$', re.IGNORECASE)
+
+    for dirpath, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if pattern.match(filename):
+                file_path = os.path.join(dirpath, filename)
+                try:
+                    os.remove(file_path)
+                    print(f"Deleted backup file: {file_path}")
+                except Exception as e:
+                    print(f"Failed to delete {file_path}: {str(e)}")
+
+
 def clean_filename(s: str) -> str:
     """Clean and normalize filenames by removing unwanted content and handling special characters.
 
@@ -181,11 +219,12 @@ def parse_cue(cue_path: str) -> List[Tuple[str, float, str, str]]:
     return tracks
 
 
-def split_audio_by_cue(audio_path: str, cue_tracks: List[Tuple[str, float, str, str]]) -> bool:
+def split_audio_by_cue(audio_path: str, cue_tracks: List[Tuple[str, float, str, str]], cd_prefix: str) -> bool:
     """Split audio file into segments based on CUE track information.
 
     Exports split segments with filenames formatted as:
-    "XX-title-performer.ext" where:
+    "CDxx-XX-title-performer.ext" where:
+    - CDxx = 2-digit source file number prefix (per directory)
     - XX = 2-digit track number
     - title = cleaned track title from CUE
     - performer = cleaned performer from CUE (optional)
@@ -193,6 +232,7 @@ def split_audio_by_cue(audio_path: str, cue_tracks: List[Tuple[str, float, str, 
     Args:
         audio_path: Path to source audio file (.flac or .wav)
         cue_tracks: Track info from parse_cue()
+        cd_prefix: Prefix with source file number (format: "CDxx-")
 
     Returns:
         True if at least one track was successfully exported, False otherwise
@@ -234,8 +274,8 @@ def split_audio_by_cue(audio_path: str, cue_tracks: List[Tuple[str, float, str, 
         clean_performer = clean_filename(performer) if performer else ""
         performer_part = f"-{clean_performer}" if clean_performer else ""
 
-        # Construct output filename and path
-        output_name = f"{track_num_padded}-{clean_title}{performer_part}{base_ext}"
+        # Construct output filename with CD prefix and path
+        output_name = f"{cd_prefix}{track_num_padded}-{clean_title}{performer_part}{base_ext}"
         output_path = os.path.join(dir_name, output_name)
 
         # Calculate start/end times in milliseconds
@@ -303,39 +343,62 @@ def main(root_dir: str) -> None:
     """Main function to process audio files and split using CUE sheets.
 
     Workflow:
-    1. Find all audio files recursively
-    2. For each audio file, check for matching CUE file
-    3. Parse CUE file and split audio if valid
-    4. Backup original files if splitting succeeds
+    1. Delete backup files ending with (1)
+    2. Find all audio files recursively
+    3. Group audio files by their parent directory
+    4. For each directory:
+        a. Sort audio files in the directory by filename (case-insensitive)
+        b. Process each audio file with directory-specific CD numbering
+        c. Check for matching CUE file and split if valid
+        d. Backup original files if splitting succeeds
 
     Args:
         root_dir: Root directory to process
     """
+    # First delete backup files ending with (1)
+    print("Deleting backup files with names ending with (1)...")
+    delete_backup_files(root_dir)
+
     audio_files = get_all_audio_files(root_dir)
-    print(f"Found {len(audio_files)} audio files")
+    # Group audio files by their parent directory
+    dir_groups = group_audio_files_by_directory(audio_files)
+    print(
+        f"Found {len(audio_files)} audio files across {len(dir_groups)} directories")
 
-    for audio_path in audio_files:
-        # Check for matching CUE file (same name, .cue extension)
-        cue_path = os.path.splitext(audio_path)[0] + '.cue'
-        if not os.path.exists(cue_path):
-            print(f"No matching CUE file, skipping: {audio_path}")
-            continue
+    # Process each directory separately
+    for dir_path, dir_audio_files in dir_groups.items():
+        # Sort audio files in current directory by filename (case-insensitive)
+        dir_audio_files.sort(key=lambda x: os.path.basename(x).lower())
+        print(
+            f"\nProcessing directory: {dir_path} with {len(dir_audio_files)} audio files")
 
-        # Parse CUE sheet for track information
-        cue_tracks = parse_cue(cue_path)
-        if not cue_tracks:
-            print(f"No valid track info in CUE, skipping: {cue_path}")
-            continue
+        # Process each audio file in this directory with CD numbering (per directory)
+        for cd_index, audio_path in enumerate(dir_audio_files, 1):
+            # Create CD prefix with 2-digit numbering (unique within current directory)
+            cd_prefix = f"CD{cd_index:02d}-"
 
-        # Split audio and check success
-        print(f"Starting split: {audio_path} ({len(cue_tracks)} tracks)")
-        split_success = split_audio_by_cue(audio_path, cue_tracks)
+            # Check for matching CUE file (same name, .cue extension)
+            cue_path = os.path.splitext(audio_path)[0] + '.cue'
+            if not os.path.exists(cue_path):
+                print(f"No matching CUE file, skipping: {audio_path}")
+                continue
 
-        # Backup source files only if split succeeded
-        if split_success:
-            backup_source_files(audio_path, cue_path)
-        else:
-            print(f"Split failed, not backing up: {audio_path}")
+            # Parse CUE sheet for track information
+            cue_tracks = parse_cue(cue_path)
+            if not cue_tracks:
+                print(f"No valid track info in CUE, skipping: {cue_path}")
+                continue
+
+            # Split audio with directory-specific CD prefix and check success
+            print(f"Starting split: {audio_path} ({len(cue_tracks)} tracks)")
+            split_success = split_audio_by_cue(
+                audio_path, cue_tracks, cd_prefix)
+
+            # Backup source files only if split succeeded
+            if split_success:
+                backup_source_files(audio_path, cue_path)
+            else:
+                print(f"Split failed, not backing up: {audio_path}")
 
 
 if __name__ == "__main__":
