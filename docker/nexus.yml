@@ -1,0 +1,46 @@
+services:
+  frontend:
+    image: heavrnl/nexus-terminal-frontend:latest  # Web
+    container_name: nexus-terminal-frontend
+    ports:
+      - "18111:80"
+
+    depends_on:
+      - backend
+      - remote-gateway
+
+  backend:
+    image: heavrnl/nexus-terminal-backend:latest
+    container_name: nexus-terminal-backend
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DEPLOYMENT_MODE: docker
+      REMOTE_GATEWAY_API_BASE_LOCAL: http://localhost:9090
+      REMOTE_GATEWAY_API_BASE_DOCKER: http://remote-gateway:9090
+      REMOTE_GATEWAY_WS_URL_LOCAL: ws://localhost:8080
+      REMOTE_GATEWAY_WS_URL_DOCKER: ws://remote-gateway:8080
+      RP_ID: 192.168.101.16
+      RP_ORIGIN: http://192.168.1.21:18111
+    volumes:
+      - /volume1/docker/nexus/data:/app/data
+
+  remote-gateway:
+    image: heavrnl/nexus-terminal-remote-gateway:latest
+    container_name: nexus-terminal-remote-gateway
+    environment:
+      GUACD_HOST: guacd
+      GUACD_PORT: 4822
+      REMOTE_GATEWAY_API_PORT: 9090
+      REMOTE_GATEWAY_WS_PORT: 8080
+      FRONTEND_URL: http://frontend
+      MAIN_BACKEND_URL: http://backend:3001
+      NODE_ENV: production
+    depends_on:
+      - guacd
+      - backend
+
+  guacd:
+    image: guacamole/guacd:latest
+    container_name: nexus-terminal-guacd
+    restart: unless-stopped

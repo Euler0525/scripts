@@ -1,0 +1,10 @@
+services:
+  app:
+    image: ugreen/music_tag_web:v1
+    ports:
+      - "8022:8002"
+    volumes:
+      - /home/Euler0525/Music:/app/media
+      - ./config:/app/data
+    network_mode: bridge
+    restart: always

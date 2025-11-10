@@ -1,0 +1,10 @@
+services:
+  bili-sync:
+    image: amtoaer/bili-sync-rs:latest
+    container_name: bili-sync
+    user: 0:0
+    ports:
+    - 12345:12345
+    volumes:
+    -  /home/Euler0525/Videos/Bilibili:/bilibili
+    restart: unless-stopped

@@ -1,0 +1,13 @@
+services:
+  app:
+    image: ugreen/alist:v1
+    volumes:
+      - ./config:/opt/alist/data
+      - /home/Euler0525:/home/Euler0525
+    ports:
+      - "5444:5244"
+    environment:
+      PUID: "0"
+      PGID: "0"
+      UMASK: "022"
+    restart: always

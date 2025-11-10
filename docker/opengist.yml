@@ -1,0 +1,10 @@
+services:
+  opengist:
+    image: thomiceli/opengist:latest
+    container_name: opengist
+    restart: unless-stopped
+    ports:
+      - "6157:6157" # HTTP port
+      - "2222:2222" # SSH port
+    volumes:
+      - /volume1/docker/opengist:/opengist

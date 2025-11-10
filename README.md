@@ -1,5 +1,17 @@
 # README
 
+## Docker Compose
+
+| File Name | Function |
+| :-------: | :------: |
+| alist.yml | Cloud disk integration |
+| bili-sync.yml | Download Bilibili videos automatically |
+| it-tools.yml | Common IT tools |
+| music-tag-web.yml | Modify the audio file information (there is a separate configuration file) |
+| nexus.yml | SSH |
+| opengist.yml | Store code snippets |
+
+
 ## Shell
 
 |    File Name     |                         Function                          |
