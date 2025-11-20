@@ -4,13 +4,13 @@
 USER_NAME=""
 PASSWORD=""
 
-# check every 20 minutes
-PERIOD=1200
+# check every 5 minutes
+PERIOD=300
 LOG_FILE_PATH="/tmp/bitsrun.log"
 
 
 handle_bit_user_json() {
-    local config_file="$HOME/.config/bitsrun.json"
+    local config_file="$HOME/.config/bitsrun/bit-user.json"
     local content="{
     \"username\": \"$USER_NAME\",
     \"password\": \"$PASSWORD\"
