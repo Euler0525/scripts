@@ -17,6 +17,7 @@
 | :------------: | :----------------------: |
 | `con_click.py` | Mouse continuous clicker |
 | `cue_audio_splitter.py` | CUE-based FLAC/WAV splitter |
+| `replace_color.py` | PNG image color replacement |
 
 ## Shell
 
