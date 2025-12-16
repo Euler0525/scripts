@@ -35,7 +35,8 @@
 
 ## Windows
 
-|   File Name   | Function |
-| :-----------: | :------: |
-| `This_PC.reg` |          |
+|   File Name   |              Function               |
+| :-----------: | :---------------------------------: |
+| `This_PC.reg` | Delete the useless folders in My PC |
+| `tex2vba.vba` | Convert LaTeX code in Word to formulas |
 
