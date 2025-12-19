@@ -18,6 +18,7 @@
 | `con_click.py` | Mouse continuous clicker |
 | `cue_audio_splitter.py` | CUE-based FLAC/WAV splitter |
 | `replace_color.py` | PNG image color replacement |
+| `amd_xilinx_doc_download.py` | Download AMD Xilinx technical manuals(AI Gen) |
 
 ## Shell
 
