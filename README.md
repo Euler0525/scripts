@@ -19,6 +19,7 @@
 | `cue_audio_splitter.py` | CUE-based FLAC/WAV splitter |
 | `replace_color.py` | PNG image color replacement |
 | `amd_xilinx_doc_download.py` | Download AMD Xilinx technical manuals(AI Gen) |
+| `download_bilibili_videos.py` | Batch download videos from Bilibili |
 
 ## Shell
 
