@@ -1,5 +1,14 @@
 #!/bin/bash
 
+export PATH="/root/.local/bin:$PATH"
+export PYTHONPATH="/root/.local/lib/python3.10/site-packages:$PYTHONPATH"
+
+echo "[$(date '+%F %T')] PATH: $PATH" >> /tmp/bitsrun.log
+echo "[$(date '+%F %T')] PYTHONPATH: $PYTHONPATH" >> /tmp/bitsrun.log
+which bitsrun >> /tmp/bitsrun.log 2>&1
+python3 -c "import sys; print(sys.path)" >> /tmp/bitsrun.log 2>&1
+
+
 USER_NAME=""
 PASSWORD=""
 
@@ -36,7 +45,7 @@ check_status() {
         echo "$timestamp Status is OK."
     else
         echo "$timestamp User is not logged in. Logging in..."
-        bitsrun login
+        /root/.local/bin/bitsrun login
     fi
 }
 
