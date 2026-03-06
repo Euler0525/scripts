@@ -15,6 +15,7 @@ def get_uploader_videos(uploader_url, output_file="bilibili_links.txt"):
     command = [
         "yt-dlp",
         "--flat-playlist",
+        "--user-agent", "Mozilla/5.0",
         "--print", "url",
         uploader_url
     ]
