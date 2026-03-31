@@ -19,7 +19,7 @@
     const excludedPatterns = [
         /euler0525/,
         /google/,
-        /.edu/  //XXX
+        /.edu/ //XXX
     ];
 
     const currentHost = window.location.hostname;
