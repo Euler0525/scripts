@@ -3,7 +3,7 @@
 ## Docker Compose
 
 | File Name | Function |
-| :-------: | :------: |
+| :-------: | :------- |
 | alist.yml | Cloud disk integration |
 | bili-sync.yml | Download Bilibili videos automatically |
 | it-tools.yml | Common IT tools |
@@ -14,7 +14,7 @@
 ## Python
 
 |   File Name    |         Function         |
-| :------------: | :----------------------: |
+| :------------: | :----------------------- |
 | `con_click.py` | Mouse continuous clicker |
 | `cue_audio_splitter.py` | CUE-based FLAC/WAV splitter |
 | `replace_color.py` | PNG image color replacement |
@@ -24,14 +24,14 @@
 ## Shell
 
 |    File Name     |                         Function                          |
-| :--------------: | :-------------------------------------------------------: |
+| :--------------: | :-------------------------------------------------------- |
 | `net_warning.sh` | Network traffic monitoring script with threshold alerting |
 |   `bitsrun.sh`   |      Log in to the BIT campus network automatically       |
 
 ## Tampermonkey
 
 |              Name               |                           Function                           |              File Name               |
-| :-----------------------------: | :----------------------------------------------------------: | :----------------------------------: |
+| :-----------------------------: | :----------------------------------------------------------- | :----------------------------------: |
 |        Bilibili Enhance         |             Download Bilibili Videos with Aria2              |        `bilibili_enhance.js`         |
 | Bilibili Video Speed Controller | Modify the playback speed of Bilibili videos (range: 0.1x to 16x) | `bilibili_video_speed_controller.js` |
 |       document.designMode       |       The text on the modified web page can be edited        |       `document_designmode.js`       |
@@ -40,13 +40,13 @@
 ## TCL
 
 |        Name        |                     Funciton                      |                            Files                             |
-| :----------------: | :-----------------------------------------------: | :----------------------------------------------------------: |
+| :----------------: | :------------------------------------------------ | :----------------------------------------------------------: |
 | auto-create-vivado | Automatically execute the basic process of Vivado | [auto-create-vivado](https://github.com/Euler0525/auto-create-vivado/tree/develop) |
 
 ## Windows
 
 |   File Name   |              Function               |
-| :-----------: | :---------------------------------: |
+| :-----------: | :---------------------------------- |
 | `This_PC.reg` | Delete the useless folders in My PC |
 | `tex2vba.vba` | Convert LaTeX code in Word to formulas |
 
