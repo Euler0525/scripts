@@ -20,6 +20,7 @@
 | `replace_color.py` | PNG image color replacement |
 | `amd_xilinx_doc_download.py` | Download AMD Xilinx technical manuals(AI Gen) |
 | `download_bilibili_videos.py` | Batch download videos from Bilibili |
+| `audio_normalize.py` | Adjust the audio volume uniformly |
 
 ## Shell
 
