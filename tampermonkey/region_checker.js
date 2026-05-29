@@ -43,7 +43,7 @@
       backdrop-filter: blur(8px);
       cursor: pointer;
       user-select: none;
-      min-width: 220px;
+      min-width: 180px;
       transition: opacity 0.2s;
     }
     #region-checker-float:hover {
