@@ -64,7 +64,7 @@
         #eye-care-toggle {
             position: fixed;
             left: 20px;
-            bottom: 20px;
+            bottom: 160px;
             width: 50px;
             height: 50px;
             border-radius: 50%;
