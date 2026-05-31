@@ -9,6 +9,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @run-at       document-start
+// @noframes
 // ==/UserScript==
 
 (function () {

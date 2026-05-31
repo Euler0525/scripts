@@ -9,6 +9,7 @@
 // @connect      ip-api.com
 // @connect      ipinfo.io
 // @run-at       document-idle
+// @noframes
 // ==/UserScript==
 
 (function () {
