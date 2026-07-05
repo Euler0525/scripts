@@ -11,6 +11,12 @@
 | nexus.yml | SSH |
 | opengist.yml | Store code snippets |
 
+## JavaScript
+
+|   File Name    |         Function         |
+| :------------: | :----------------------- |
+| `codex-auth.js` | Convert Codex Authentication file |
+
 ## Python
 
 |   File Name    |         Function         |
@@ -21,6 +27,8 @@
 | `amd_xilinx_doc_download.py` | Download AMD Xilinx technical manuals(AI Gen) |
 | `download_bilibili_videos.py` | Batch download videos from Bilibili |
 | `audio_normalize.py` | Adjust the audio volume uniformly |
+| `codex-auth.py` | Convert Codex Authentication file |
+
 
 ## Shell
 
