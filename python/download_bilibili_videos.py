@@ -1,3 +1,8 @@
+"""
+1. https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc
+2. Export as `bilibili-cookies.txt`
+"""
+
 import os
 import subprocess
 
@@ -75,6 +80,7 @@ def download_bilibili_videos(links_file, output_dir="downloads"):
 
         command = [
             "yt-dlp",
+            "--cookies", "bilibili-cookies.txt",
             "-f", "bestvideo+bestaudio/best",
             "--merge-output-format", "mp4",
             "-o", f"{output_dir}/%(title)s.%(ext)s",
