@@ -158,7 +158,13 @@ app.integrationBandwidthUnitDropDown.Layout.Column = 4;
 channelPowerHint = uilabel(toolbar, ...
     'HorizontalAlignment', 'left');
 channelPowerHint.Layout.Row = 3;
-channelPowerHint.Layout.Column = [5 10];
+channelPowerHint.Layout.Column = [5 8];
+
+app.digitalWaveformButton = uibutton(toolbar, ...
+    'Text', 'Digital waveform', ...
+    'ButtonPushedFcn', @onOpenDigitalWaveform);
+app.digitalWaveformButton.Layout.Row = 3;
+app.digitalWaveformButton.Layout.Column = [9 10];
 
 plotGrid = uigridlayout(root, [2 1]);
 plotGrid.Layout.Row = 2;
@@ -317,6 +323,34 @@ app.powerLabel.FontColor = markerColor;
             updateCurrentCsvData();
         end
         plotCurrentData();
+    end
+
+    function onOpenDigitalWaveform(~, ~)
+        if strcmp(app.dataMode, 'csv')
+            updateCurrentCsvData();
+        end
+        if isempty(app.currentData)
+            uialert(app.fig, 'Import valid I/Q data before opening the digital waveform viewer.', 'No Data');
+            return;
+        end
+
+        fsHz = app.fsField.Value * unitScale(app.unitDropDown.Value);
+        signalNames = {'I', 'Q'};
+        headerWidths = [NaN NaN];
+        if strcmp(app.dataMode, 'csv')
+            signalNames = {['I: ' app.iSignalDropDown.Value], ['Q: ' app.qSignalDropDown.Value]};
+            iIndex = find(strcmp(app.csvHeaders, app.iSignalDropDown.Value), 1);
+            qIndex = find(strcmp(app.csvHeaders, app.qSignalDropDown.Value), 1);
+            headerWidths = [parseSignalBitWidth(app.csvHeaders{iIndex}), ...
+                parseSignalBitWidth(app.csvHeaders{qIndex})];
+        end
+
+        defaultBitWidth = max(headerWidths, [], 'omitnan');
+        if isempty(defaultBitWidth) || isnan(defaultBitWidth)
+            defaultBitWidth = inferSignedBitWidth(app.currentData);
+        end
+        defaultBitWidth = min(52, max(2, defaultBitWidth));
+        openDigitalWaveformViewer(app.currentData, fsHz, signalNames, defaultBitWidth);
     end
 
     function disableSignalSelectors(iText, qText)
@@ -517,6 +551,212 @@ app.powerLabel.FontColor = markerColor;
     end
 end
 
+function openDigitalWaveformViewer(data, fsHz, signalNames, defaultBitWidth)
+integerData = round(double(data));
+sampleCount = size(integerData, 1);
+hasRoundedValues = any(~isfinite(data(:)) | double(data(:)) ~= integerData(:));
+
+viewer = uifigure( ...
+    'Name', 'Digital Waveform Viewer', ...
+    'Position', [150 120 1250 760]);
+
+root = uigridlayout(viewer, [3 1]);
+root.RowHeight = {42, '1x', 24};
+root.ColumnWidth = {'1x'};
+root.Padding = [10 10 10 8];
+root.RowSpacing = 8;
+
+controls = uigridlayout(root, [1 10]);
+controls.Layout.Row = 1;
+controls.ColumnWidth = {55, 170, 65, 70, 80, 95, 95, 85, 80, '1x'};
+controls.RowHeight = {'1x'};
+controls.ColumnSpacing = 7;
+controls.Padding = [0 0 0 0];
+
+uilabel(controls, 'Text', 'Signal', 'HorizontalAlignment', 'right');
+channelDropDown = uidropdown(controls, ...
+    'Items', {signalNames{1}, signalNames{2}, 'I + Q'}, ...
+    'Value', signalNames{1});
+uilabel(controls, 'Text', 'Bit width', 'HorizontalAlignment', 'right');
+bitWidthField = uieditfield(controls, 'numeric', ...
+    'Value', defaultBitWidth, ...
+    'Limits', [2 52], ...
+    'RoundFractionalValues', 'on');
+uilabel(controls, 'Text', 'Start sample', 'HorizontalAlignment', 'right');
+startField = uieditfield(controls, 'numeric', ...
+    'Value', 1, ...
+    'Limits', [1 sampleCount], ...
+    'RoundFractionalValues', 'on');
+uilabel(controls, 'Text', 'Samples shown', 'HorizontalAlignment', 'right');
+countField = uieditfield(controls, 'numeric', ...
+    'Value', min(64, sampleCount), ...
+    'Limits', [1 sampleCount], ...
+    'RoundFractionalValues', 'on');
+refreshButton = uibutton(controls, 'Text', 'Refresh');
+
+tabs = uitabgroup(root);
+tabs.Layout.Row = 2;
+waveformTab = uitab(tabs, 'Title', 'Bit Waveforms');
+valuesTab = uitab(tabs, 'Title', 'Binary Values');
+
+waveformGrid = uigridlayout(waveformTab, [1 1]);
+waveformGrid.Padding = [6 6 6 6];
+waveformAxes = uiaxes(waveformGrid);
+grid(waveformAxes, 'on');
+
+valuesGrid = uigridlayout(valuesTab, [1 1]);
+valuesGrid.Padding = [6 6 6 6];
+valuesTable = uitable(valuesGrid);
+
+statusLabel = uilabel(root);
+statusLabel.Layout.Row = 3;
+statusLabel.FontColor = [0.35 0.35 0.35];
+
+channelDropDown.ValueChangedFcn = @refreshViewer;
+bitWidthField.ValueChangedFcn = @refreshViewer;
+startField.ValueChangedFcn = @refreshViewer;
+countField.ValueChangedFcn = @refreshViewer;
+refreshButton.ButtonPushedFcn = @refreshViewer;
+refreshViewer([], []);
+
+    function refreshViewer(~, ~)
+        bitWidth = bitWidthField.Value;
+        firstSample = startField.Value;
+        lastSample = min(sampleCount, firstSample + countField.Value - 1);
+        sampleIndices = (firstSample:lastSample).';
+        selectedColumns = selectedSignalColumns(channelDropDown.Value, signalNames);
+
+        cla(waveformAxes);
+        hold(waveformAxes, 'on');
+        laneLabels = {};
+        laneCenters = [];
+        laneNumber = 0;
+        laneBase = 0;
+        levelHeight = 0.55;
+        pairGap = 0.45;
+        channelGap = 0.70;
+        wrappedCount = 0;
+        tableData = table(sampleIndices, 'VariableNames', {'Sample'});
+
+        for selectedIndex = 1:numel(selectedColumns)
+            columnIndex = selectedColumns(selectedIndex);
+            signalValues = integerData(sampleIndices, columnIndex);
+            [binaryText, bits, wasWrapped] = signedBinaryText(signalValues, bitWidth);
+            wrappedCount = wrappedCount + sum(wasWrapped);
+            validName = matlab.lang.makeValidName(sprintf('%s_%d', ...
+                signalNames{columnIndex}, columnIndex));
+            tableData.([validName '_Decimal']) = signalValues;
+            tableData.([validName '_Binary']) = cellstr(binaryText);
+
+            if columnIndex == 1
+                dataColor = [0.0000 0.4470 0.7410];
+            else
+                dataColor = [0.8500 0.3250 0.0980];
+            end
+
+            if selectedIndex > 1
+                laneBase = laneBase + channelGap;
+            end
+            for bitIndex = bitWidth:-1:1
+                bitRow = bitWidth - bitIndex + 1;
+                if bitRow > 1 && mod(bitRow - 1, 2) == 0
+                    laneBase = laneBase + pairGap;
+                end
+                laneNumber = laneNumber + 1;
+                y = levelHeight * bits(:, bitIndex) + laneBase;
+                stepSamples = [sampleIndices; lastSample + 1];
+                stepValues = [y; y(end)];
+                stairs(waveformAxes, stepSamples, stepValues, ...
+                    'Color', chooseBitColor(bitIndex, bitWidth, dataColor), ...
+                    'LineWidth', chooseBitWidth(bitIndex, bitWidth));
+                if bitIndex == bitWidth
+                    bitLabel = 'sign';
+                else
+                    bitLabel = sprintf('bit %d', bitIndex - 1);
+                end
+                laneLabels{laneNumber} = sprintf('%s %s', signalNames{columnIndex}, bitLabel);
+                laneCenters(laneNumber) = laneBase + levelHeight / 2;
+                laneBase = laneBase + 1;
+            end
+        end
+
+        hold(waveformAxes, 'off');
+        waveformAxes.YTick = laneCenters;
+        waveformAxes.YTickLabel = laneLabels;
+        waveformAxes.YLim = [0 laneBase];
+        waveformAxes.XLim = [firstSample - 0.5 lastSample + 0.5];
+        waveformAxes.YDir = 'reverse';
+        xlabel(waveformAxes, 'Sample index');
+        ylabel(waveformAxes, 'Bits');
+        title(waveformAxes, sprintf('Two''s-complement bit waveforms (%d-bit)', bitWidth));
+        valuesTable.Data = tableData;
+
+        note = '';
+        if hasRoundedValues
+            note = ' | Non-integer/non-finite input is rounded for digital display';
+        end
+        if wrappedCount > 0
+            note = sprintf('%s | %d displayed values wrap at %d bits', note, wrappedCount, bitWidth);
+        end
+        statusLabel.Text = sprintf('Samples %d-%d of %d | Fs %.12g Hz%s', ...
+            firstSample, lastSample, sampleCount, fsHz, note);
+    end
+end
+
+function columns = selectedSignalColumns(selectedValue, signalNames)
+if strcmp(selectedValue, 'I + Q')
+    columns = [1 2];
+elseif strcmp(selectedValue, signalNames{2})
+    columns = 2;
+else
+    columns = 1;
+end
+end
+
+function [binaryText, bits, wasWrapped] = signedBinaryText(values, bitWidth)
+minimumValue = -2^(bitWidth - 1);
+maximumValue = 2^(bitWidth - 1) - 1;
+wasWrapped = values < minimumValue | values > maximumValue | ~isfinite(values);
+values(~isfinite(values)) = 0;
+unsignedValues = mod(values, 2^bitWidth);
+binaryText = string(dec2bin(unsignedValues, bitWidth));
+bits = false(numel(values), bitWidth);
+for bitIndex = 1:bitWidth
+    bits(:, bitIndex) = bitget(unsignedValues, bitIndex) ~= 0;
+end
+end
+
+function color = chooseBitColor(bitIndex, bitWidth, dataColor)
+if bitIndex == bitWidth
+    color = [0.75 0.15 0.15];
+else
+    color = dataColor;
+end
+end
+
+function width = chooseBitWidth(bitIndex, bitWidth)
+if bitIndex == bitWidth
+    width = 1.5;
+else
+    width = 1.0;
+end
+end
+
+function bitWidth = inferSignedBitWidth(data)
+values = round(double(data(:)));
+values = values(isfinite(values));
+if isempty(values)
+    bitWidth = 16;
+    return;
+end
+
+maximumPositive = max([0; values(values >= 0)]);
+minimumNegative = min([0; values(values < 0)]);
+positiveWidth = ceil(log2(maximumPositive + 1)) + 1;
+negativeWidth = ceil(log2(max(1, abs(minimumNegative)))) + 1;
+bitWidth = min(52, max([2 positiveWidth negativeWidth]));
+end
+
 function names = findIqVariables(matData)
 allNames = fieldnames(matData);
 isIq = false(size(allNames));
@@ -685,3 +925,4 @@ switch unitText
         scale = 1;
 end
 end
+
