@@ -45,12 +45,37 @@ check_status() {
         echo "$timestamp Status is OK."
     else
         echo "$timestamp User is not logged in. Logging in..."
-        /root/.local/bin/bitsrun login
+
+        for retry in 1 2 3; do
+            echo "$timestamp Login attempt $retry/3."
+            /root/.local/bin/bitsrun login
+
+            sleep 10
+
+            status_output=$(bitsrun status --json)
+
+            if echo "$status_output" | grep -q '"user_name"'; then
+                echo "$timestamp Login successful."
+                return
+            fi
+        done
+
+        echo "$timestamp Login failed 3 times. Rebooting router."
+        sync
+        /sbin/reboot
     fi
 }
 
+start_openclash() {
+    rm -f /etc/openclash/GeoSite.dat
+    cp /root/GeoSite.dat /etc/openclash/
+
+    mkdir -p /etc/openclash/core/
+    cp /root/clash /etc/openclash/core/
+}
 
 handle_bit_user_json
+start_openclash
 
 while true; do
     check_status
