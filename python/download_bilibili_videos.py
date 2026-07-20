@@ -19,6 +19,7 @@ def get_uploader_videos(uploader_url, output_file="bilibili_links.txt"):
 
     command = [
         "yt-dlp",
+        "--cookies", "bilibili-cookies.txt",
         "--flat-playlist",
         "--user-agent", "Mozilla/5.0",
         "--print", "url",
@@ -41,10 +42,10 @@ def get_uploader_videos(uploader_url, output_file="bilibili_links.txt"):
         with open(output_file, "w", encoding="utf-8") as f:
             f.write('\n'.join(urls))
 
-        print(f"✓ Successfully fetched {len(urls)} video links")
+        print(f"[OK] Successfully fetched {len(urls)} video links")
         return urls
     except subprocess.CalledProcessError as e:
-        print(f"✗ Failed to fetch: {e}")
+        print(f"[ERROR] Failed to fetch: {e}")
         return []
 
 
@@ -89,16 +90,72 @@ def download_bilibili_videos(links_file, output_dir="downloads"):
 
         try:
             subprocess.run(command, check=True)
-            print(f"✓ Download completed")
+            print(f"[OK] Download completed")
         except subprocess.CalledProcessError:
-            print(f"✗ Download failed: {url}")
+            print(f"[ERROR] Download failed: {url}")
         except Exception as e:
-            print(f"✗ Error occurred: {e}")
+            print(f"[ERROR] Error occurred: {e}")
+
+
+def download_bilibili_playlist(playlist_url, playlist_type, output_dir="downloads"):
+    """Download all videos from a Bilibili favorites list or collection."""
+    if not playlist_url:
+        print(f"[ERROR] {playlist_type} URL cannot be empty")
+        return
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    print(f"Downloading Bilibili {playlist_type}: {playlist_url}")
+    command = [
+        "yt-dlp",
+        "--cookies", "bilibili-cookies.txt",
+        "--yes-playlist",
+        "--ignore-errors",
+        "-f", "bestvideo+bestaudio/best",
+        "--merge-output-format", "mp4",
+        "-o", f"{output_dir}/%(playlist_title,playlist)s/%(title)s.%(ext)s",
+        playlist_url
+    ]
+
+    try:
+        subprocess.run(command, check=True)
+        print(f"[OK] {playlist_type} download completed")
+    except subprocess.CalledProcessError:
+        print(f"[ERROR] {playlist_type} download failed: {playlist_url}")
+    except Exception as e:
+        print(f"[ERROR] Error occurred: {e}")
+
+
+def main():
+    print("\nBilibili downloader")
+    print("1. Download videos from bilibili_links.txt")
+    print("2. Download all videos from an uploader")
+    print("3. Download a favorites list")
+    print("4. Download a collection/series")
+    choice = input("Please select [1-4] (default: 1): ").strip() or "1"
+
+    if choice == "1":
+        links_file = input(
+            "Links file (default: bilibili_links.txt): ").strip()
+        download_bilibili_videos(links_file or "bilibili_links.txt")
+    elif choice == "2":
+        uid = input("Please input UID: ").strip()
+        uploader_url = f"https://space.bilibili.com/{uid}"
+        links = get_uploader_videos(uploader_url, "bilibili_links.txt")
+        if links:
+            download_bilibili_videos("bilibili_links.txt")
+    elif choice == "3":
+        favorites_url = input("Please input the favorites list URL: ").strip()
+        download_bilibili_playlist(favorites_url, "favorites list")
+    elif choice == "4":
+        collection_url = input(
+            "Please input the collection/series URL: ").strip()
+        download_bilibili_playlist(collection_url, "collection/series")
+    else:
+        print("[ERROR] Invalid selection")
 
 
 if __name__ == "__main__":
-    uid = input("Please input UID:")
-    uploader_url = f"https://space.bilibili.com/{uid}"
+    main()
 
-    get_uploader_videos(uploader_url, "bilibili_links.txt")
-    download_bilibili_videos("bilibili_links.txt")
