@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# https://euler0525.github.io/blogs//posts/ba0d09df/#%E6%A0%A1%E5%9B%AD%E7%BD%91%E8%87%AA%E5%8A%A8%E7%99%BB%E9%99%86
 export PATH="/root/.local/bin:$PATH"
 export PYTHONPATH="/root/.local/lib/python3.10/site-packages:$PYTHONPATH"
 
@@ -8,32 +9,35 @@ echo "[$(date '+%F %T')] PYTHONPATH: $PYTHONPATH" >> /tmp/bitsrun.log
 which bitsrun >> /tmp/bitsrun.log 2>&1
 python3 -c "import sys; print(sys.path)" >> /tmp/bitsrun.log 2>&1
 
-
 USER_NAME=""
 PASSWORD=""
 
 # check every 5 minutes
 PERIOD=300
 LOG_FILE_PATH="/tmp/bitsrun.log"
+REBOOT_MARKER="/root/.bitsrun_reboot_attempted"
 
 
 handle_bit_user_json() {
-    local config_file="$HOME/.config/bitsrun/bit-user.json"
+    local config_files=(
+        "/etc/bit-user.json"
+        "/etc/xdg/bitsrun/bit-user.json"
+        "/root/.config/bitsrun/bit-user.json"
+        "/root/.config/bit-user.json"
+    )
+
     local content="{
     \"username\": \"$USER_NAME\",
     \"password\": \"$PASSWORD\"
 }"
 
-    if [ ! -f "$config_file" ]; then
+    local config_file
+
+    for config_file in "${config_files[@]}"; do
         mkdir -p "$(dirname "$config_file")"
         echo "$content" > "$config_file"
         chmod 600 "$config_file"
-    else
-        if [ ! -s "$config_file" ]; then
-            echo "$content" > "$config_file"
-        fi
-        chmod 600 "$config_file"
-    fi
+    done
 }
 
 check_status() {
@@ -43,6 +47,8 @@ check_status() {
 
     if echo "$status_output" | grep -q '"user_name"'; then
         echo "$timestamp Status is OK."
+
+        rm -f "$REBOOT_MARKER"
     else
         echo "$timestamp User is not logged in. Logging in..."
 
@@ -56,11 +62,19 @@ check_status() {
 
             if echo "$status_output" | grep -q '"user_name"'; then
                 echo "$timestamp Login successful."
+
+                rm -f "$REBOOT_MARKER"
                 return
             fi
         done
 
-        echo "$timestamp Login failed 3 times. Rebooting router."
+        if [ -f "$REBOOT_MARKER" ]; then
+            echo "$timestamp Login failed after reboot. Router will not reboot again."
+            return
+        fi
+
+        echo "$timestamp Login failed 3 times. Rebooting router once."
+        touch "$REBOOT_MARKER"
         sync
         /sbin/reboot
     fi
@@ -79,5 +93,6 @@ start_openclash
 
 while true; do
     check_status
-    sleep $PERIOD
+    sleep "$PERIOD"
 done
+
