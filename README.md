@@ -52,6 +52,7 @@
 |       document.designMode       | The text on the modified web page can be edited              |       `document_designmode.js`       |
 |        Browser Dark Mode        | Switch to the dark theme of the browser                      |        `browser_dark_mode.js`        |
 |         Region Checker          | Check the current location                                   |         `region_checker.js`          |
+|         CCTV Download           | Download CCTV videos                                         |          `cctv_download.js`          |
 
 ## TCL
 
